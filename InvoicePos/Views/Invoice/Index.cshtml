@@ -1,0 +1,288 @@
+﻿@using Models;
+@model OrderBillMaster
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Invoice</h1>
+
+@using (Html.BeginForm("SaveBill", "Invoice", FormMethod.Post))
+{
+    <div class="card">
+        @{
+            string msg = ViewBag.Msg;
+            if (!string.IsNullOrEmpty(msg))
+            {
+                <div class="alert alert-primary" role="alert">Succesfully Paid Bill</div>
+            }
+        }
+    </div>
+    <div class="card">
+        @{
+            var date = @ViewBag.Date;
+            var time = @ViewBag.Time;
+        }
+        
+        <div class="card-body">
+            @*<input type="hidden" name="orders" />*@
+            @Html.HiddenFor(model =>model.Orders)
+            <div class="form-group row">
+                <div class=" col-md-2">
+                    @Html.LabelFor(model => model.Date, new { @class = "control-label" })
+                </div>
+
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.Date,
+                new { @class = "form-control", @Value = ViewBag.Date, @readonly = "readonly" })
+                </div>
+            </div>
+
+
+            <div class="form-group row" style="margin-top:10px">
+                <div class=" col-md-2">
+                    @Html.LabelFor(model => model.Time, new { @class = "control-label" })
+                </div>
+
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.Time,
+                new { @class = "form-control date",  @Value = ViewBag.Time, @readonly = "readonly" })
+
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:10px">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <div class="row">
+                                <Label class="col-sm-4">Item</Label>
+
+                                <select id="itemId" class="form-control-sm col-sm-6">
+                                    <option value="">Select</option>
+                                    @foreach (var item in @ViewBag.Items)
+                                    {
+                                        <option value=@item.Id>@item.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-4">Quantity</label>
+                                <input id="Quantity" class="form-control-sm col-sm-6" />
+                            </div>
+
+                        </div>
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-5">Price/Unit</label>
+                                <input id="UnitPrice" class="form-control-sm col-sm-6" />
+                            </div>
+
+                        </div>
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-5">Amount</label>
+                                <input id="Amount" class="form-control-sm col-sm-6" readonly />
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="" style="display:flex; justify-content: flex-end;margin-top:10px">
+                        <button type="button" id="btnAdd" class="btn btn-success btn-sm" style="margin-right:10px">Add To Bill</button>
+                        <button type="button" id="btnReset" class="btn btn-secondary btn-sm">Reset</button>
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+            <div class="card" style="margin-top:10px">
+                <div class="card-body">
+                    <table class="table" id="order">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Price/Unit</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-4">Sub Total</label>
+                                @Html.TextBoxFor(model =>model.SubTotal, new {@class="form-control-sm col-sm-6"})
+                                @*<input id="SubTotal" class="form-control-sm col-sm-6" readonly />*@
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-4">Discount</label>
+                                @Html.TextBoxFor(model => model.Discount, new {@class="form-control-sm col-sm-6", @readonly = "readonly"})
+                                @*<input id="Discount" class="form-control-sm col-sm-6" />*@
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-4">VAT</label>
+                                @Html.TextBoxFor(model =>model.VAT, new {@class="form-control-sm col-sm-6", @readonly = "readonly"})
+                               @* <input id="VAT" class="form-control-sm col-sm-6" readonly />*@
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="row">
+                                <label class="col-sm-5">Grand Total</label>
+                                @Html.TextBoxFor(model =>model.GrandTotal, new {@class="form-control-sm col-sm-6", @readonly = "readonly"})
+
+                                @*<input id="GrandTotal" class="form-control-sm col-sm-6" readonly />*@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row col-sm-3" style="margin:10px">
+                <button type="submit" class="btn btn-secondary btn-sm">Amount Paid & Add New Bill</button>
+            </div>
+        </div>
+    </div>
+}
+
+@section ScriptFile{
+    <script>
+        let orders = [];
+        let subTotal = 0;
+        $(document).ready(function () {
+            let date = "@ViewBag.Date";
+            let time = "@ViewBag.Time";
+
+            let vat = 12;
+            $("#VAT").val(vat);
+
+            $("#Date").val(date);
+            $("#Time").val(time);
+
+            $("#UnitPrice").on('keyup', function () {
+                let quantity = $("#Quantity").val();
+                let unitPrice = $("#UnitPrice").val();
+                let amount = parseFloat(quantity) * parseInt(unitPrice);
+
+                $("#Amount").val(amount);
+            })
+
+            $("#Quantity").on('keyup', function () {
+                let quantity = $("#Quantity").val();
+                let unitPrice = $("#UnitPrice").val();
+                let amount = parseFloat(quantity) * parseInt(unitPrice !== '' ? unitPrice : 0);
+
+                $("#Amount").val(amount);
+            });
+
+            $("#Discount").on('keyup', function () {
+
+                let subTotal = $("#SubTotal").val();
+                let discount = $("#Discount").val();
+                let vat = $("#VAT").val();
+
+                let disCountedAmount = subTotal - discount;
+                let vatAmount = (parseFloat(disCountedAmount) * 12) / 100;
+
+                total = disCountedAmount + vatAmount;
+
+                $("#GrandTotal").val(total.toFixed(3));
+            })
+
+            $("#btnAdd").on('click', function () {
+                let itemName = $("#itemId option:selected").text();
+                let itemId = $("#itemId option:selected").val();
+                let quantity = $("#Quantity").val();
+                let unitPrice = $("#UnitPrice").val();
+                let amount = $("#Amount").val();
+
+                if (itemId === "" || itemId === null) {
+                    $("#itemId").focus();
+                }
+                else {
+                    orders.push({
+                        ItemName: itemName, ItemId: itemId, Quantity: quantity, UnitPrice: unitPrice, Amount: amount
+                    });
+                    subTotal = subTotal + parseFloat(amount);
+                    showOrdersData(orders);
+
+                    //$("#orders").val(orders);
+                    $("#Orders").val(JSON.stringify(orders));
+                    $("#SubTotal").val(subTotal);
+                    calculateTotal(subTotal);
+
+                    $("#itemId option:selected").val("");
+                    $("#Quantity").val("");
+                    $("#UnitPrice").val("");
+                    $("#Amount").val("");
+                }
+
+
+            });
+
+            $("#btnReset").on('click', function () {
+
+                $("#itemId option:selected").val("");
+                $("#Quantity").val("");
+                $("#UnitPrice").val("");
+                $("#Amount").val("");
+            })
+        })
+
+        function showOrdersData(data) {
+            if (data) {
+                var len = 0;
+                var text = "";
+                $(data).each(function (index) {
+                    text += "<tr>" +
+                        "<td>" + orders[len].ItemName + "</td>" +
+                        "<td>" + orders[len].Quantity + "</td>" +
+                        "<td>" + orders[len].UnitPrice + "</td>" +
+                        "<td>" + orders[len].Amount + "</td>" +
+                        "</tr>";
+                    len++;
+                });
+
+                if (text !== "") {
+                    $("#order tbody").empty();
+                    $("#order tbody").append(text);
+                } else {
+                    $("#order tbody").empty();
+                }
+            }
+        }
+        function calculateTotal(subTotal) {
+            let total = 0
+
+            let discount = $("#Discount").val();
+
+            if (discount !== '' || discount !== null) {
+                let disCountedAmount = subTotal - (parseFloat(subTotal) * discount) / 100;
+                let vatAmount = (parseFloat(disCountedAmount) * 12) / 100;
+
+                total = disCountedAmount + vatAmount;
+            }
+            else {
+
+                let vatAmount = (parseFloat(disCountedAmount) * 12) / 100;
+
+                total = subTotal + vatAmount;
+            }
+
+            $("#GrandTotal").val(total);
+        }
+    </script>
+}
